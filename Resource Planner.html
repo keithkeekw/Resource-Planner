@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XR Global · Shift Resource Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@600&family=Roboto+Mono:wght@500&family=Roboto:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --canvas:#FFFFFF;--surface:#F5F3F8;--surface-soft:#EDEAF2;
+  --hairline:#E2E0EA;--ink:#1A1A18;--charcoal:#2E2E2C;
+  --steel:#7C7C78;--accent:#7600C4;--success-bg:#E6F7E8;
+  --success-text:#1A8A5C;--error:#d45656;
+  --amber-bg:#FFFBEB;--amber-text:#B45309;
+}
+html{font-size:15px}
+body{
+  font-family:'Roboto',sans-serif;font-weight:400;color:var(--charcoal);
+  background:var(--canvas);min-width:1280px;-webkit-font-smoothing:antialiased;
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.top-bar{
+  position:sticky;top:0;z-index:100;height:52px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--hairline);
+  background:var(--canvas);
+}
+.top-bar-left{display:flex;align-items:center;gap:8px}
+.top-bar-left .logo{width:22px;height:22px;background:var(--accent);border-radius:4px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600}
+.top-bar-left h1{font-family:'Roboto Slab',serif;font-size:15px;font-weight:600;color:var(--ink);letter-spacing:0.01em}
+.top-bar-right{display:flex;align-items:center;gap:8px}
+
+.btn{font-family:'Roboto',sans-serif;font-size:13px;font-weight:600;border-radius:9999px;padding:6px 16px;cursor:pointer;border:1px solid var(--hairline);background:var(--canvas);color:var(--charcoal);transition:all 0.15s;white-space:nowrap;line-height:1.4}
+.btn:hover{background:var(--surface-soft)}
+.btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn-primary:hover{background:#333}
+.btn-danger{background:#fff;color:var(--error);border-color:var(--error)}
+.btn-danger:hover{background:#FEF7F7}
+
+.shift-bar{
+  display:flex;align-items:center;gap:12px;padding:12px 24px;
+  border-bottom:1px solid var(--hairline);background:var(--canvas);
+}
+.shift-pills{display:flex;gap:0;border:1px solid var(--hairline);border-radius:9999px;overflow:hidden}
+.shift-pill{padding:5px 20px;font-family:'Roboto',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;background:var(--canvas);color:var(--steel);transition:all 0.15s}
+.shift-pill:not(:last-child){border-right:1px solid var(--hairline)}
+.shift-pill.active{background:var(--ink);color:#fff}
+.shift-pill:not(.active):hover{background:var(--surface)}
+.shift-meta{display:flex;align-items:center;gap:12px;margin-left:auto}
+.shift-meta label{font-size:13px;font-weight:600;color:var(--steel);text-transform:uppercase;letter-spacing:0.03em}
+.shift-meta input[type="text"]{
+  font-family:'Roboto',sans-serif;font-size:13px;border:1px solid var(--hairline);
+  border-radius:6px;padding:4px 10px;background:var(--surface);color:var(--charcoal);
+  outline:none;transition:border-color 0.15s;
+}
+.shift-meta input[type="text"]:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(118,0,196,0.15)}
+.shift-meta .shift-date{width:130px;text-align:center;font-weight:600}
+.shift-meta .shift-lead{width:180px}
+
+.health-banner{
+  display:flex;align-items:center;gap:12px;padding:10px 24px;
+  font-size:15px;transition:background 0.3s,color 0.3s;
+  border-bottom:1px solid var(--hairline);
+}
+.health-banner .shift-label{font-family:'Roboto Slab',serif;font-size:16px;font-weight:600}
+.health-banner .mono{font-family:'Roboto Mono',monospace;font-size:15px;font-weight:500}
+.health-banner .sep{color:#c8c4d0;font-size:14px;font-weight:300;margin:0 2px}
+.health-banner .status{border-radius:9999px;padding:2px 12px;font-size:13px;font-weight:600}
+.health-banner.healthy{background:var(--success-bg);color:var(--charcoal)}
+.health-banner.healthy .status{background:var(--success-text);color:#fff}
+.health-banner.reduced{background:var(--amber-bg);color:var(--charcoal)}
+.health-banner.reduced .status{background:var(--amber-text);color:#fff}
+.health-banner.critical{background:#FEF7F7;color:var(--charcoal)}
+.health-banner.critical .status{background:var(--error);color:#fff}
+.health-banner.no-data{background:var(--surface);color:var(--steel)}
+.health-banner.no-data .status{background:var(--steel);color:#fff}
+
+.section{padding:16px 24px;border-bottom:1px solid var(--hairline)}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-family:'Roboto Slab',serif;font-size:16px;font-weight:600;color:var(--ink)}
+.section-actions{display:flex;align-items:center;gap:8px}
+
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{
+  font-family:'Roboto',sans-serif;font-size:13px;font-weight:600;text-transform:uppercase;
+  letter-spacing:0.03em;color:var(--steel);text-align:left;padding:8px 12px;
+  border-bottom:1px solid var(--hairline);white-space:nowrap;
+}
+thead th.centered{text-align:center}
+tbody td{
+  padding:6px 12px;border-bottom:1px solid var(--hairline);
+  font-size:15px;vertical-align:middle;
+}
+tbody td.centered{text-align:center}
+tbody tr.critical-row{background:#FEF7F7}
+tbody tr:last-child td{border-bottom:none}
+
+td input[type="number"],td input[type="text"]{
+  font-family:'Roboto',sans-serif;font-size:15px;border:1px solid var(--hairline);
+  border-radius:6px;padding:4px 8px;width:100%;background:var(--surface);
+  color:var(--charcoal);outline:none;text-align:center;transition:border-color 0.15s;
+}
+td input[type="number"]:focus,td input[type="text"]:focus{
+  border-color:var(--accent);box-shadow:0 0 0 2px rgba(118,0,196,0.15);
+}
+td input.num-input{width:68px}
+td input.agent-input{width:160px}
+.coverage-val{font-family:'Roboto Mono',monospace;font-size:15px;font-weight:500;text-align:center}
+td .badge{
+  display:inline-block;border-radius:9999px;padding:2px 10px;
+  font-family:'Roboto',sans-serif;font-size:13px;font-weight:600;
+}
+.badge-healthy{background:var(--success-bg);color:var(--success-text)}
+.badge-reduced{background:var(--amber-bg);color:var(--amber-text)}
+.badge-critical{background:#FEF7F7;color:var(--error)}
+.badge-na{background:var(--surface);color:var(--steel)}
+
+.task-filter{display:flex;align-items:center;gap:8px}
+.task-filter select{
+  font-family:'Roboto',sans-serif;font-size:13px;font-weight:600;
+  border:1px solid var(--hairline);border-radius:9999px;padding:4px 14px;
+  background:var(--canvas);color:var(--charcoal);outline:none;cursor:pointer;
+  -webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237C7C78'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;
+}
+.task-filter select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(118,0,196,0.15)}
+.task-filter .task-count{font-size:13px;color:var(--steel)}
+.task-row-seeded{border-left:2px solid var(--hairline)}
+.task-row-user{border-left:2px solid var(--accent)}
+.task-delete-btn{
+  background:none;border:none;cursor:pointer;color:var(--steel);font-size:16px;
+  line-height:1;padding:2px 6px;border-radius:4px;opacity:0;transition:opacity 0.15s;
+}
+tr:hover .task-delete-btn{opacity:1}
+.task-delete-btn:hover{color:var(--error);background:#FEF7F7}
+td input.task-input{width:100%;text-align:left}
+td select.task-select{font-family:Roboto,sans-serif;font-size:15px;border:1px solid var(--hairline);border-radius:6px;padding:4px 6px;background:var(--surface);color:var(--charcoal);outline:none;width:100%;cursor:pointer}
+td select.task-select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(118,0,196,0.15)}
+
+.snapshot-header{display:none;align-items:center;gap:16px;padding:16px 24px;background:var(--canvas);border-bottom:1px solid var(--hairline)}
+.snapshot-header .logo{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:600}
+.snapshot-header h2{font-family:'Roboto Slab',serif;font-size:16px;font-weight:600;color:var(--ink)}
+.snapshot-header .snapshot-meta{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px;font-family:'Roboto Mono',monospace;color:var(--charcoal)}
+.snapshot-header .snapshot-meta .sep{color:#c8c4d0;font-size:12px;font-weight:300}
+.snapshot-meta-shift{font-weight:600;color:var(--ink)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;z-index:1000;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast.show{opacity:1}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--canvas);border-radius:12px;padding:24px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.12)}
+.modal-box h3{font-family:'Roboto Slab',serif;font-size:16px;font-weight:600;color:var(--ink);margin-bottom:8px}
+.modal-box p{font-size:15px;color:var(--charcoal);margin-bottom:20px;line-height:1.5}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+</style>
+</head>
+<body>
+
+<div class="top-bar" data-no-export>
+  <div class="top-bar-left">
+    <div class="logo">XR</div>
+    <h1>XR Global · Shift Resource Planner</h1>
+  </div>
+  <div class="top-bar-right">
+    <button class="btn btn-primary" onclick="copySnapshot()">Copy Snapshot</button>
+    <button class="btn btn-primary" onclick="saveSnapshot()">Save Snapshot</button>
+  </div>
+</div>
+
+<div class="shift-bar" data-no-export>
+  <div class="shift-pills" id="shiftPills">
+    <button class="shift-pill" data-shift="apac" onclick="switchShift('apac')">APAC</button>
+    <button class="shift-pill" data-shift="uk" onclick="switchShift('uk')">UK</button>
+    <button class="shift-pill active" data-shift="us" onclick="switchShift('us')">US</button>
+  </div>
+  <div class="shift-meta">
+    <label>Date</label>
+    <input type="text" class="shift-date" id="shiftDate" placeholder="DD MMM YYYY" maxlength="11">
+    <label>Shift Lead</label>
+    <input type="text" class="shift-lead" id="shiftLead" placeholder="Name">
+  </div>
+</div>
+
+<div id="exportBody">
+
+<div class="snapshot-header" id="snapshotHeader">
+  <div class="logo">XR</div>
+  <h2>XR Global · Shift Resource Planner</h2>
+  <div class="snapshot-meta">
+    <span class="snapshot-meta-shift" id="snapShiftLabel">US</span>
+    <span class="sep">│</span>
+    <span id="snapDateLabel"></span>
+    <span class="sep">│</span>
+    <span id="snapLeadLabel"></span>
+  </div>
+</div>
+
+<div class="health-banner no-data" id="healthBanner" role="status" aria-live="polite">
+  <span class="shift-label" id="bannerShift">US</span>
+  <span class="sep">│</span>
+  <span class="mono" id="bannerDate"></span>
+  <span class="sep">│</span>
+  <span>Overall Coverage:</span>
+  <span class="mono" id="bannerPercent">N/A</span>
+  <span class="sep">│</span>
+  <span>Status:</span>
+  <span class="status" id="bannerStatus">NO DATA</span>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <span class="section-title">Headcount Summary</span>
+    <div class="section-actions" data-no-export>
+      <button class="btn" onclick="resetToday()">Reset Today</button>
+      <button class="btn btn-danger" onclick="openResetAll()">Reset All</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Team</th>
+          <th class="centered">HC</th>
+          <th class="centered">Planned</th>
+          <th class="centered">Unplanned</th>
+          <th class="centered">Agent (Unplanned)</th>
+          <th class="centered">Coverage</th>
+          <th class="centered">Status</th>
+        </tr>
+      </thead>
+      <tbody id="hcBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <span class="section-title">Task Assignments</span>
+    <div data-no-export class="task-filter">
+      <label style="font-size:13px;color:var(--steel);font-weight:600">Show shift:</label>
+      <select id="taskFilter">
+        <option value="APAC">APAC</option>
+        <option value="UK">UK</option>
+        <option value="US" selected>US</option>
+      </select>
+      <span class="task-count" id="taskCount">0 of 15</span>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30px"></th>
+          <th style="width:80px">Platform</th>
+          <th style="width:130px">Team</th>
+          <th style="width:100px">Shift</th>
+          <th>Agent Name</th>
+          <th>Task</th>
+        </tr>
+      </thead>
+      <tbody id="taskBody"></tbody>
+    </table>
+  </div>
+  <div style="margin-top:10px" data-no-export>
+    <button class="btn" onclick="addTaskRow()">+ Add Row</button>
+  </div>
+</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <h3>Reset All Data</h3>
+    <p>This will clear all headcount data, leave entries, agent names, and task assignments for all shifts. This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeResetAll()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmResetAll()">Reset All</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TEAMS = ['L1 - A5','T1 - XR','L2 - A5','Team Lead','Syndication','Print','DWE'];
+const SHIFTS = ['apac','uk','us'];
+
+const SEED_TASKS = [
+  {platform:'XR',team:'T1',shift:'ALL',task:'Calls and Chats'},
+  {platform:'XR',team:'T1',shift:'UK',task:'ABC News'},
+  {platform:'XR',team:'T1',shift:'ALL',task:'Advertiser Approval'},
+  {platform:'A5',team:'L1',shift:'US',task:'SSS Password Protection'},
+  {platform:'A5',team:'L1',shift:'ALL',task:'WB Management Mailbox'},
+  {platform:'A5',team:'L1',shift:'APAC',task:'WB Asset Metadata Update (Run Phoenix)'},
+  {platform:'A5',team:'L2',shift:'APAC',task:'WB Asset Metadata Update (Workflow - Zabbix)'},
+  {platform:'A5',team:'L2',shift:'APAC',task:'WB Proxy Delete'},
+  {platform:'A5',team:'L2',shift:'US',task:'WB Proxy Transcode Reports'},
+  {platform:'A5',team:'L2',shift:'ALL',task:'Zabbix Monitoring'},
+  {platform:'A5',team:'L2',shift:'ALL',task:'GDN - Delivery Monitoring'},
+  {platform:'XR',team:'Syndication',shift:'ALL',task:'Monitoring XR Support Dashboard Alarm'},
+  {platform:'XR',team:'Syndication',shift:'ALL',task:'News & Syndication Alarms'},
+  {platform:'A5',team:'Print',shift:'ALL',task:'Zabbix Print Monitoring'},
+  {platform:'A5',team:'ALL',shift:'ALL',task:'Prodigy AI Tools'}
+];
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const STORAGE_KEY = 'xr_shift_planner_v3';
+let currentShift = 'us';
+let state = {};
+
+function initState(){
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if(saved) try{state = JSON.parse(saved);}catch(e){}
+  SHIFTS.forEach(s=>{
+    if(!state[s]) state[s] = {date:'',lead:'',hc:{},leave:{},unplanned:{},agent:{},tasks:[],lastTaskId:0};
+    TEAMS.forEach(t=>{
+      if(state[s].hc[t]===undefined) state[s].hc[t]=0;
+      if(state[s].leave[t]===undefined) state[s].leave[t]=0;
+      if(state[s].unplanned[t]===undefined) state[s].unplanned[t]=0;
+      if(state[s].agent[t]===undefined) state[s].agent[t]='';
+    });
+    if(!state[s].tasks||state[s].tasks.length===0){
+      state[s].tasks = SEED_TASKS.map((st,i)=>({...st,id:i+1,userAdded:false}));
+      state[s].lastTaskId = SEED_TASKS.length;
+    }
+  });
+  saveState();
+}
+
+function saveState(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+}
+
+function getShift(){return state[currentShift];}
+
+function todayStr(){
+  const d = new Date();
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${day} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function switchShift(shift){
+  if(shift===currentShift) return;
+  saveCurrentShiftState();
+  currentShift = shift;
+  document.querySelectorAll('.shift-pill').forEach(el=>{
+    el.classList.toggle('active',el.dataset.shift===shift);
+  });
+  loadShiftState();
+  document.getElementById('taskFilter').value = shift.toUpperCase();
+  renderTasks();
+}
+
+function saveCurrentShiftState(){
+  const s = getShift();
+  s.date = document.getElementById('shiftDate').value;
+  s.lead = document.getElementById('shiftLead').value;
+  Array.from(document.getElementById('hcBody').children).forEach((row,i)=>{
+    if(!row) return;
+    const inputs = row.querySelectorAll('input');
+    s.hc[TEAMS[i]] = parseInt(inputs[0].value) || 0;
+    s.leave[TEAMS[i]] = parseInt(inputs[1].value) || 0;
+    s.unplanned[TEAMS[i]] = parseInt(inputs[2].value) || 0;
+    s.agent[TEAMS[i]] = inputs[3].value;
+  });
+  saveState();
+}
+
+function loadShiftState(){
+  const s = getShift();
+  const dateInput = document.getElementById('shiftDate');
+  dateInput.value = s.date || todayStr();
+  if(!s.date){s.date = dateInput.value; saveState();}
+  document.getElementById('shiftLead').value = s.lead || '';
+  renderHC();
+  renderBanner();
+}
+
+function renderHC(){
+  const s = getShift();
+  const tbody = document.getElementById('hcBody');
+  tbody.innerHTML = '';
+  TEAMS.forEach(t=>{
+    const hc = s.hc[t] || 0;
+    const leave = s.leave[t] || 0;
+    const unplanned = s.unplanned[t] || 0;
+    const agent = s.agent[t] || '';
+    const available = hc - leave - unplanned;
+    let coverage = 'N/A'; let badge = 'badge-na'; let badgeText = '—'; let crit = false;
+    if(hc>0){
+      const pct = Math.round((available/hc)*100);
+      coverage = pct + '%';
+      if(pct>=80){badge='badge-healthy';badgeText='Healthy';}
+      else if(pct>=50){badge='badge-reduced';badgeText='Reduced';}
+      else{badge='badge-critical';badgeText='Critical';crit=true;}
+    }
+    const tr = document.createElement('tr');
+    if(crit) tr.className='critical-row';
+    tr.innerHTML = `
+      <td style="font-weight:600;color:var(--ink)">${t}</td>
+      <td class="centered"><input type="number" class="num-input" value="${hc}" min="0" oninput="updateHC(${TEAMS.indexOf(t)})"></td>
+      <td class="centered"><input type="number" class="num-input" value="${leave}" min="0" oninput="updateHC(${TEAMS.indexOf(t)})"></td>
+      <td class="centered"><input type="number" class="num-input" value="${unplanned}" min="0" oninput="updateHC(${TEAMS.indexOf(t)})"></td>
+      <td class="centered"><input type="text" class="agent-input" value="${agent}" oninput="updateHC(${TEAMS.indexOf(t)})"></td>
+      <td class="coverage-val centered">${coverage}</td>
+      <td class="centered"><span class="badge ${badge}">${badgeText}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateHC(idx){
+  const s = getShift();
+  const row = document.getElementById('hcBody').children[idx];
+  if(!row) return;
+  const inputs = row.querySelectorAll('input');
+  s.hc[TEAMS[idx]] = parseInt(inputs[0].value) || 0;
+  s.leave[TEAMS[idx]] = parseInt(inputs[1].value) || 0;
+  s.unplanned[TEAMS[idx]] = parseInt(inputs[2].value) || 0;
+  s.agent[TEAMS[idx]] = inputs[3].value;
+  saveState();
+  updateRow(idx, s, row);
+  renderBanner();
+}
+
+function updateRow(idx, s, rowEl){
+  const t = TEAMS[idx];
+  const hc = s.hc[t] || 0;
+  const leave = s.leave[t] || 0;
+  const unplanned = s.unplanned[t] || 0;
+  const available = hc - leave - unplanned;
+  let coverage = 'N/A'; let badge = 'badge-na'; let badgeText = '—'; let crit = false;
+  if(hc>0){
+    const pct = Math.round((available/hc)*100);
+    coverage = pct + '%';
+    if(pct>=80){badge='badge-healthy';badgeText='Healthy';}
+    else if(pct>=50){badge='badge-reduced';badgeText='Reduced';}
+    else{badge='badge-critical';badgeText='Critical';crit=true;}
+  }
+  const cells = rowEl.querySelectorAll('td');
+  if(!cells.length) return;
+  rowEl.className = crit ? 'critical-row' : '';
+  cells[5].className = 'coverage-val centered';
+  cells[5].textContent = coverage;
+  cells[6].className = 'centered';
+  cells[6].innerHTML = '<span class="badge ' + badge + '">' + badgeText + '</span>';
+}
+
+function renderBanner(){
+  const s = getShift();
+  const dateStr = document.getElementById('shiftDate').value || s.date || '';
+  const shiftName = currentShift.toUpperCase();
+
+  let totalHC = 0, totalAvail = 0;
+  TEAMS.forEach(t=>{
+    const hc = s.hc[t] || 0;
+    if(hc>0){
+      totalHC += hc;
+      totalAvail += hc - (s.leave[t]||0) - (s.unplanned[t]||0);
+    }
+  });
+
+  let cls = 'no-data', statusText = 'NO DATA', pctText = 'N/A';
+  if(totalHC>0){
+    const pct = Math.round((totalAvail/totalHC)*100);
+    pctText = pct + '%';
+    if(pct>=80){cls='healthy';statusText='HEALTHY';}
+    else if(pct>=50){cls='reduced';statusText='REDUCED';}
+    else{cls='critical';statusText='CRITICAL';}
+  }
+
+  const banner = document.getElementById('healthBanner');
+  banner.className = 'health-banner ' + cls;
+  document.getElementById('bannerShift').textContent = shiftName;
+  document.getElementById('bannerDate').textContent = dateStr;
+  document.getElementById('bannerPercent').textContent = pctText;
+  document.getElementById('bannerStatus').textContent = statusText;
+}
+
+function renderTasks(){
+  const s = getShift();
+  const filter = document.getElementById('taskFilter').value;
+  const tbody = document.getElementById('taskBody');
+  tbody.innerHTML = '';
+  const filtered = s.tasks.filter(t=>t.shift==='ALL'||t.shift===filter);
+  document.getElementById('taskCount').textContent = `${filtered.length} of ${s.tasks.length}`;
+  filtered.forEach(t=>{
+    const rowClass = t.userAdded ? 'task-row-user' : 'task-row-seeded';
+    const tr = document.createElement('tr');
+    tr.className = rowClass;
+    tr.innerHTML = `
+      <td><button class="task-delete-btn" onclick="deleteTask(${t.id})" title="Delete row">×</button></td>
+      <td>
+        <select class="task-select" onchange="updateTask(${t.id},'platform',this.value)">
+          <option value="" ${t.platform===''?'selected':''}></option>
+          <option value="XR" ${t.platform==='XR'?'selected':''}>XR</option>
+          <option value="A5" ${t.platform==='A5'?'selected':''}>A5</option>
+        </select>
+      </td>
+      <td>
+        <select class="task-select" onchange="updateTask(${t.id},'team',this.value)">
+          <option value="" ${t.team===''?'selected':''}></option>
+          <option value="T1" ${t.team==='T1'?'selected':''}>T1</option>
+          <option value="L1" ${t.team==='L1'?'selected':''}>L1</option>
+          <option value="L2" ${t.team==='L2'?'selected':''}>L2</option>
+          <option value="Syndication" ${t.team==='Syndication'?'selected':''}>Syndication</option>
+          <option value="Print" ${t.team==='Print'?'selected':''}>Print</option>
+          <option value="ALL" ${t.team==='ALL'?'selected':''}>ALL</option>
+        </select>
+      </td>
+      <td>
+        <select class="task-select" onchange="updateTask(${t.id},'shift',this.value)">
+          <option value="ALL" ${t.shift==='ALL'?'selected':''}>ALL</option>
+          <option value="APAC" ${t.shift==='APAC'?'selected':''}>APAC</option>
+          <option value="UK" ${t.shift==='UK'?'selected':''}>UK</option>
+          <option value="US" ${t.shift==='US'?'selected':''}>US</option>
+        </select>
+      </td>
+      <td><input type="text" class="task-input" value="${t.agent||''}" onchange="updateTask(${t.id},'agent',this.value)"></td>
+      <td><input type="text" class="task-input" value="${t.task}" onchange="updateTask(${t.id},'task',this.value)"></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateTask(id,field,val){
+  const s = getShift();
+  const t = s.tasks.find(x=>x.id===id);
+  if(t){t[field]=val;saveState();}
+  renderTasks();
+}
+
+function deleteTask(id){
+  const s = getShift();
+  s.tasks = s.tasks.filter(t=>t.id!==id);
+  saveState();
+  renderTasks();
+}
+
+function addTaskRow(){
+  const s = getShift();
+  s.lastTaskId = (s.lastTaskId || SEED_TASKS.length) + 1;
+  s.tasks.push({id:s.lastTaskId,platform:'',team:'',shift:document.getElementById('taskFilter').value,agent:'',task:'',userAdded:true});
+  saveState();
+  renderTasks();
+}
+
+function resetToday(){
+  const s = getShift();
+  s.date = document.getElementById('shiftDate').value || todayStr();
+  s.lead = document.getElementById('shiftLead').value || '';
+  TEAMS.forEach(t=>{s.leave[t]=0;s.unplanned[t]=0;s.agent[t]='';});
+  saveState();
+  renderHC();
+  renderBanner();
+  showToast('Reset Today completed — leave fields and agent names cleared');
+}
+
+function openResetAll(){document.getElementById('modalOverlay').classList.add('open');}
+function closeResetAll(){document.getElementById('modalOverlay').classList.remove('open');}
+function confirmResetAll(){
+  localStorage.removeItem(STORAGE_KEY);
+  state = {};
+  initState();
+  loadShiftState();
+  renderTasks();
+  renderBanner();
+  closeResetAll();
+  showToast('All data has been reset');
+}
+
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+function snapshotExport(done){
+  const s = getShift();
+  const dateStr = document.getElementById('shiftDate').value || s.date || '';
+  const lead = document.getElementById('shiftLead').value || s.lead || '';
+  document.getElementById('snapShiftLabel').textContent = currentShift.toUpperCase();
+  document.getElementById('snapDateLabel').textContent = dateStr;
+  document.getElementById('snapLeadLabel').textContent = 'Shift Lead: ' + (lead || '—');
+
+  html2canvas(document.getElementById('exportBody'),{
+    scale:2,backgroundColor:'#ffffff',useCORS:true,
+    onclone:function(doc){
+      doc.querySelectorAll('[data-no-export]').forEach(el=>el.remove());
+      const sh = doc.getElementById('snapshotHeader');
+      if(sh) sh.style.display = 'flex';
+    }
+  }).then(done);
+}
+
+function saveSnapshot(){
+  snapshotExport(function(canvas){
+    const dateStr = (getShift().date||todayStr()).replace(/[^0-9]/g,'');
+    const link = document.createElement('a');
+    link.download = `XR_ShiftPlan_${currentShift.toUpperCase()}_${dateStr}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('Snapshot saved');
+  });
+}
+
+function copySnapshot(){
+  snapshotExport(function(canvas){
+    canvas.toBlob(blob=>{
+      if(!blob){showToast('Failed to generate snapshot');return;}
+      try{
+        navigator.clipboard.write([new ClipboardItem({'image/png':blob})]).then(()=>{
+          showToast('Snapshot copied to clipboard');
+        }).catch(()=>{
+          showToast('Clipboard API unavailable — try Save Snapshot instead');
+        });
+      }catch(e){
+        showToast('Clipboard API unavailable — try Save Snapshot instead');
+      }
+    },'image/png');
+  });
+}
+
+document.getElementById('taskFilter').addEventListener('change',renderTasks);
+document.getElementById('shiftDate').addEventListener('change',function(){
+  const s = getShift(); s.date = this.value; saveState(); renderBanner();
+});
+document.getElementById('shiftLead').addEventListener('input',function(){
+  const s = getShift(); s.lead = this.value; saveState();
+});
+
+initState();
+loadShiftState();
+renderTasks();
+renderBanner();
+</script>
+</body>
+</html>
