@@ -5,7 +5,7 @@
 - **Single HTML file** — `Resource Planner.html` (not `index.html`). No build, no npm, no backend.
 - Vanilla JS + CSS. No frameworks. Google Fonts (Roboto, Roboto Slab, Roboto Mono) and `html2canvas@1.4.1` loaded from CDN.
 - Works offline after first load. All data in `localStorage` under key `xr_shift_planner_v3`.
-- Each shift (apac, uk, us) stores isolated state: `{ date, lead, hc, leave, unplanned, agent, tasks, lastTaskId }`.
+- Each shift (apac, uk, us) stores isolated state: `{ date, lead, hc, leave, unplanned, agent, remark, tasks, lastTaskId }`.
 
 ## Key constants to know
 

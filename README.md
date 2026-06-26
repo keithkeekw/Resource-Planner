@@ -14,7 +14,7 @@ Replace your Excel-based workflow with a faster, visually clear, shareable tool 
 ## Features
 
 - **Three-shift tabs** — APAC, UK, US with isolated state per shift
-- **Headcount summary** — Track HC, planned/unplanned leave, and agents with auto-calculated coverage percentages
+- **Headcount summary** — Track HC, planned/unplanned leave, agents, and remarks with auto-calculated coverage percentages
 - **Reactive health banner** — Full-width strip showing overall coverage status (Healthy / Reduced / Critical / No Data)
 - **Task assignments** — 15 pre-seeded tasks with inline editing, add/delete rows, and shift filtering
 - **Snapshot export** — Save 2× retina PNG or copy to clipboard for handovers

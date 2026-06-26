@@ -231,6 +231,7 @@ td select.task-select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba
           <th class="centered">Planned</th>
           <th class="centered">Unplanned</th>
           <th class="centered">Agent (Unplanned)</th>
+          <th class="centered">Remark</th>
           <th class="centered">Coverage</th>
           <th class="centered">Status</th>
         </tr>
@@ -319,12 +320,14 @@ function initState(){
   const saved = localStorage.getItem(STORAGE_KEY);
   if(saved) try{state = JSON.parse(saved);}catch(e){}
   SHIFTS.forEach(s=>{
-    if(!state[s]) state[s] = {date:'',lead:'',hc:{},leave:{},unplanned:{},agent:{},tasks:[],lastTaskId:0};
+    if(!state[s]) state[s] = {date:'',lead:'',hc:{},leave:{},unplanned:{},agent:{},remark:{},tasks:[],lastTaskId:0};
     TEAMS.forEach(t=>{
       if(state[s].hc[t]===undefined) state[s].hc[t]=0;
       if(state[s].leave[t]===undefined) state[s].leave[t]=0;
       if(state[s].unplanned[t]===undefined) state[s].unplanned[t]=0;
       if(state[s].agent[t]===undefined) state[s].agent[t]='';
+      if(state[s].remark===undefined) state[s].remark={};
+      if(state[s].remark[t]===undefined) state[s].remark[t]='';
     });
     if(!state[s].tasks||state[s].tasks.length===0){
       state[s].tasks = SEED_TASKS.map((st,i)=>({...st,id:i+1,userAdded:false}));
@@ -369,6 +372,7 @@ function saveCurrentShiftState(){
     s.leave[TEAMS[i]] = parseInt(inputs[1].value) || 0;
     s.unplanned[TEAMS[i]] = parseInt(inputs[2].value) || 0;
     s.agent[TEAMS[i]] = inputs[3].value;
+    s.remark[TEAMS[i]] = inputs[4].value;
   });
   saveState();
 }
@@ -392,6 +396,7 @@ function renderHC(){
     const leave = s.leave[t] || 0;
     const unplanned = s.unplanned[t] || 0;
     const agent = s.agent[t] || '';
+    const remark = s.remark?.[t] || '';
     const available = hc - leave - unplanned;
     let coverage = 'N/A'; let badge = 'badge-na'; let badgeText = '—'; let crit = false;
     if(hc>0){
@@ -409,6 +414,7 @@ function renderHC(){
       <td class="centered"><input type="number" class="num-input" value="${leave}" min="0" oninput="updateHC(${TEAMS.indexOf(t)})"></td>
       <td class="centered"><input type="number" class="num-input" value="${unplanned}" min="0" oninput="updateHC(${TEAMS.indexOf(t)})"></td>
       <td class="centered"><input type="text" class="agent-input" value="${agent}" oninput="updateHC(${TEAMS.indexOf(t)})"></td>
+      <td class="centered"><input type="text" class="remark-input" value="${remark}" oninput="updateHC(${TEAMS.indexOf(t)})"></td>
       <td class="coverage-val centered">${coverage}</td>
       <td class="centered"><span class="badge ${badge}">${badgeText}</span></td>
     `;
@@ -425,6 +431,7 @@ function updateHC(idx){
   s.leave[TEAMS[idx]] = parseInt(inputs[1].value) || 0;
   s.unplanned[TEAMS[idx]] = parseInt(inputs[2].value) || 0;
   s.agent[TEAMS[idx]] = inputs[3].value;
+  s.remark[TEAMS[idx]] = inputs[4].value;
   saveState();
   updateRow(idx, s, row);
   renderBanner();
@@ -447,10 +454,10 @@ function updateRow(idx, s, rowEl){
   const cells = rowEl.querySelectorAll('td');
   if(!cells.length) return;
   rowEl.className = crit ? 'critical-row' : '';
-  cells[5].className = 'coverage-val centered';
-  cells[5].textContent = coverage;
-  cells[6].className = 'centered';
-  cells[6].innerHTML = '<span class="badge ' + badge + '">' + badgeText + '</span>';
+  cells[6].className = 'coverage-val centered';
+  cells[6].textContent = coverage;
+  cells[7].className = 'centered';
+  cells[7].innerHTML = '<span class="badge ' + badge + '">' + badgeText + '</span>';
 }
 
 function renderBanner(){
